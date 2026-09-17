@@ -1,0 +1,24 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - PORT=3001
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - SEARCH_CACHE_TTL=${SEARCH_CACHE_TTL:-21600000}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
