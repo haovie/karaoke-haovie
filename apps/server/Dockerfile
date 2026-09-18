@@ -14,13 +14,12 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
 COPY . .
 RUN pnpm --filter @karaoke/server build
+RUN pnpm --filter @karaoke/server deploy --prod /prod/server
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
-COPY --from=build /app/apps/server/dist ./dist
+COPY --from=build /prod/server ./
 COPY --from=build /app/apps/server/src/data ./dist/data
-COPY --from=deps /app/apps/server/node_modules ./node_modules
-COPY --from=deps /app/node_modules ./node_modules
 ENV NODE_ENV=production
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
