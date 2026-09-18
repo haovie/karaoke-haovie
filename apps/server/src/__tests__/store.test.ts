@@ -73,6 +73,44 @@ describe('InMemoryRoomStore', () => {
     it('should throw ROOM_NOT_FOUND for invalid code', () => {
       expect(() => store.addToQueue('XXXXXX', makeQueueItem(), 0)).toThrow('ROOM_NOT_FOUND');
     });
+
+    it('should allow a user to add after their completed items have played', () => {
+      const room = store.createRoom();
+      for (let i = 0; i < 10; i++) {
+        store.addToQueue(room.roomCode, makeQueueItem({ videoId: `played${i}`, addedBy: 'Alice' }), i);
+      }
+
+      for (let i = 0; i < 9; i++) {
+        store.advanceQueue(room.roomCode);
+      }
+
+      const updated = store.addToQueue(
+        room.roomCode,
+        makeQueueItem({ videoId: 'new-song', addedBy: 'Alice' }),
+        10
+      );
+
+      expect(updated.queue).toHaveLength(11);
+      expect(updated.queue[10].videoId).toBe('new-song');
+    });
+
+    it('should exclude completed items from the total queue limit', () => {
+      const room = store.createRoom();
+      for (let i = 0; i < 100; i++) {
+        store.addToQueue(room.roomCode, makeQueueItem({ videoId: `played${i}`, addedBy: `User${i}` }), i);
+      }
+
+      for (let i = 0; i < 99; i++) {
+        store.advanceQueue(room.roomCode);
+      }
+
+      expect(() => store.addToQueue(
+        room.roomCode,
+        makeQueueItem({ videoId: 'new-song', addedBy: 'NewUser' }),
+        100
+      )).not.toThrow();
+    });
+
   });
 
   describe('removeFromQueue', () => {
@@ -106,12 +144,13 @@ describe('InMemoryRoomStore', () => {
         store.addToQueue(room.roomCode, item, i);
         return item;
       });
+      // Added 3 items: currentIndex is 0 (first item playing)
       // Advance to index 2
-      store.advanceQueue(room.roomCode);
-      store.advanceQueue(room.roomCode);
-      // Remove item at index 0 (before currentIndex 1)
+      store.advanceQueue(room.roomCode); // currentIndex = 1
+      store.advanceQueue(room.roomCode); // currentIndex = 2
+      // Remove item at index 0 (before currentIndex 2)
       const updated = store.removeFromQueue(room.roomCode, items[0].id, 'Host', true, 3);
-      expect(updated.currentIndex).toBe(0); // adjusted from 1 to 0 since item before was removed
+      expect(updated.currentIndex).toBe(1); // adjusted from 2 to 1 since item before was removed
     });
   });
 
@@ -146,7 +185,7 @@ describe('InMemoryRoomStore', () => {
         store.addToQueue(room.roomCode, item, i);
         return item;
       });
-      store.advanceQueue(room.roomCode); // currentIndex = 0
+      // Initial currentIndex is 0 (playing item 'a')
       // Prioritize item 'd' (index 3) to position 1 (currentIndex + 1)
       const updated = store.prioritizeInQueue(room.roomCode, items[3].id, 4);
       expect(updated.queue[1].videoId).toBe('vidd');
@@ -156,19 +195,16 @@ describe('InMemoryRoomStore', () => {
   describe('advanceQueue', () => {
     it('should increment currentIndex', () => {
       const room = store.createRoom();
-      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v1' }), 0);
-      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v2' }), 1);
+      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v1' }), 0); // currentIndex is 0
+      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v2' }), 1); // currentIndex is 0
       const updated = store.advanceQueue(room.roomCode);
-      expect(updated.currentIndex).toBe(0);
-      const updated2 = store.advanceQueue(room.roomCode);
-      expect(updated2.currentIndex).toBe(1);
+      expect(updated.currentIndex).toBe(1);
     });
 
     it('should not advance past queue length', () => {
       const room = store.createRoom();
-      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v1' }), 0);
-      store.advanceQueue(room.roomCode); // 0
-      const updated = store.advanceQueue(room.roomCode); // should stay at 0
+      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'v1' }), 0); // currentIndex is 0
+      const updated = store.advanceQueue(room.roomCode); // stays at 0 since queue.length is 1
       expect(updated.currentIndex).toBe(0);
     });
   });

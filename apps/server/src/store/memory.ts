@@ -61,11 +61,12 @@ export class InMemoryRoomStore implements RoomStore {
       throw new Error('DUPLICATE_VIDEO');
     }
 
-    if (room.queue.length >= MAX_QUEUE_SIZE) {
+    const activeQueue = room.queue.slice(Math.max(0, room.currentIndex));
+    if (activeQueue.length >= MAX_QUEUE_SIZE) {
       throw new Error('QUEUE_FULL');
     }
 
-    const userCount = room.queue.filter(q => q.addedBy === item.addedBy).length;
+    const userCount = activeQueue.filter(q => q.addedBy === item.addedBy).length;
     if (userCount >= MAX_USER_QUEUE) {
       throw new Error('USER_QUEUE_FULL');
     }

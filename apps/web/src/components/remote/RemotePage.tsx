@@ -14,6 +14,8 @@ export default function RemotePage() {
   const nickname = useRoomStore(s => s.nickname);
   const currentSong = useRoomStore(s => s.currentSong());
   const queue = useRoomStore(s => s.queue);
+  const currentIndex = useRoomStore(s => s.currentIndex);
+  const upcomingCount = Math.max(0, queue.length - (currentIndex + 1));
   const [activeTab, setActiveTab] = useState<'search' | 'queue' | 'control'>('search');
 
   if (isLoading && !nickname) return <div className="h-screen bg-karaoke-dark flex items-center justify-center text-white">Đang tải...</div>;
@@ -52,9 +54,9 @@ export default function RemotePage() {
         <button onClick={() => setActiveTab('queue')} className={`flex-1 py-4 flex flex-col items-center justify-center gap-1 ${activeTab === 'queue' ? 'text-karaoke-primary' : 'text-gray-500'}`}>
           <div className="relative">
              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-             {queue.length > 0 && (
+             {upcomingCount > 0 && (
                <div className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-                 {queue.length}
+                 {upcomingCount}
                </div>
              )}
           </div>

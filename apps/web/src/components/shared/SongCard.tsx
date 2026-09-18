@@ -9,9 +9,10 @@ interface SongCardProps {
   isKaraoke?: boolean;
   action?: React.ReactNode;
   compact?: boolean;
+  addedBy?: string;
 }
 
-export const SongCard: React.FC<SongCardProps> = ({ title, channelTitle, thumbnailUrl, durationSec, isKaraoke, action, compact }) => {
+export const SongCard: React.FC<SongCardProps> = ({ title, channelTitle, thumbnailUrl, durationSec, isKaraoke, action, compact, addedBy }) => {
   const isK = isKaraoke ?? title.toLowerCase().includes('karaoke');
   return (
     <div className={`flex gap-3 items-center bg-gray-800 rounded-lg overflow-hidden p-2 ${compact ? 'text-sm' : ''}`}>
@@ -23,7 +24,10 @@ export const SongCard: React.FC<SongCardProps> = ({ title, channelTitle, thumbna
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-white truncate">{title}</div>
-        <div className="text-gray-400 text-xs truncate mt-1">{channelTitle}</div>
+        <div className="text-gray-400 text-xs truncate mt-1">
+          {channelTitle}
+          {addedBy && <span className="text-gray-400"> • Đặt bởi <span className="text-karaoke-primary font-medium">{addedBy}</span></span>}
+        </div>
         {isK && <span className="inline-block mt-1 text-[10px] bg-karaoke-secondary text-white px-1.5 py-0.5 rounded">KARAOKE</span>}
       </div>
       {action && <div className="flex-shrink-0 pr-1">{action}</div>}

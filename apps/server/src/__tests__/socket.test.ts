@@ -171,4 +171,63 @@ describe('Socket.IO Handlers', () => {
     const left = await leftPromise;
     expect(left.socketId).toBeTruthy();
   });
+
+  it('should remove item from queue and broadcast queue:updated', async () => {
+    const host = createClient();
+    await waitForConnect(host);
+
+    // Host creates room
+    const hostStatePromise = waitForEvent(host, S2C.ROOM_STATE);
+    host.emit(C2S.ROOM_CREATE, { nickname: 'Host' });
+    const state = await hostStatePromise;
+
+    // Remote Alice joins
+    const alice = createClient();
+    await waitForConnect(alice);
+    const aliceStatePromise = waitForEvent(alice, S2C.ROOM_STATE);
+    alice.emit(C2S.ROOM_JOIN, { roomCode: state.roomCode, nickname: 'Alice' });
+    const aliceState = await aliceStatePromise;
+
+    // Alice adds song
+    const addPromise = waitForEvent(host, S2C.QUEUE_UPDATED);
+    alice.emit(C2S.QUEUE_ADD, {
+      videoId: 'vidAlice1234',
+      title: 'Alice Song',
+      channelTitle: 'Alice Channel',
+      thumbnailUrl: 'https://i.ytimg.com/vi/vidAlice1234/mqdefault.jpg',
+      durationSec: 200,
+      nickname: 'Alice',
+      version: aliceState.version,
+    });
+    const afterAdd = await addPromise;
+    expect(afterAdd.queue).toHaveLength(1);
+    const item = afterAdd.queue[0];
+
+    // Remote Bob joins
+    const bob = createClient();
+    await waitForConnect(bob);
+    const bobStatePromise = waitForEvent(bob, S2C.ROOM_STATE);
+    bob.emit(C2S.ROOM_JOIN, { roomCode: state.roomCode, nickname: 'Bob' });
+    await bobStatePromise;
+
+    // Bob tries to remove Alice's song -> should fail
+    const bobErrPromise = waitForEvent(bob, S2C.ERROR);
+    bob.emit(C2S.QUEUE_REMOVE, {
+      itemId: item.id,
+      nickname: 'Bob',
+      version: afterAdd.version,
+    });
+    const bobErr = await bobErrPromise;
+    expect(bobErr.error).toBeTruthy();
+
+    // Alice removes her own song -> should succeed
+    const removePromise = waitForEvent(host, S2C.QUEUE_UPDATED);
+    alice.emit(C2S.QUEUE_REMOVE, {
+      itemId: item.id,
+      nickname: 'Alice',
+      version: afterAdd.version,
+    });
+    const afterRemove = await removePromise;
+    expect(afterRemove.queue).toHaveLength(0);
+  });
 });
