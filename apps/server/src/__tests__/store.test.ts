@@ -46,6 +46,21 @@ describe('InMemoryRoomStore', () => {
       expect(() => store.addToQueue(room.roomCode, item2, 1)).toThrow('DUPLICATE_VIDEO');
     });
 
+    it('should allow a completed video to be added again', () => {
+      const room = store.createRoom();
+      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'vid1', addedBy: 'Alice' }), 0);
+      store.addToQueue(room.roomCode, makeQueueItem({ videoId: 'vid2', addedBy: 'Bob' }), 1);
+      store.advanceQueue(room.roomCode);
+
+      const updated = store.addToQueue(
+        room.roomCode,
+        makeQueueItem({ videoId: 'vid1', addedBy: 'Alice' }),
+        2
+      );
+
+      expect(updated.queue[2].videoId).toBe('vid1');
+    });
+
     it('should reject on version mismatch', () => {
       const room = store.createRoom();
       const item = makeQueueItem({ videoId: 'vid1' });

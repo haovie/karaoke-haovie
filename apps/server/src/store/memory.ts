@@ -57,11 +57,11 @@ export class InMemoryRoomStore implements RoomStore {
     if (!room) throw new Error('ROOM_NOT_FOUND');
     if (room.version !== version) throw new Error('VERSION_CONFLICT');
 
-    if (room.queue.some(q => q.videoId === item.videoId)) {
+    const activeQueue = room.queue.slice(Math.max(0, room.currentIndex));
+    if (activeQueue.some(q => q.videoId === item.videoId)) {
       throw new Error('DUPLICATE_VIDEO');
     }
 
-    const activeQueue = room.queue.slice(Math.max(0, room.currentIndex));
     if (activeQueue.length >= MAX_QUEUE_SIZE) {
       throw new Error('QUEUE_FULL');
     }
