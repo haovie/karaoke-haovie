@@ -1,8 +1,70 @@
-import { useState } from 'react';
+import { useRef, useState, type PointerEvent } from 'react';
 import { useRoomStore } from '../../stores/roomStore';
 import { socket } from '../../lib/socket';
 import { C2S, formatDuration } from '@karaoke/shared';
 import { useToast } from '../shared/Toast';
+
+const SeekBar = ({ currentTime, duration }: { currentTime: number; duration: number }) => {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [dragRatio, setDragRatio] = useState<number | null>(null);
+
+  const isDragging = dragRatio !== null;
+  const ratio = isDragging ? dragRatio! : (duration > 0 ? Math.min(1, currentTime / duration) : 0);
+  const displayTime = isDragging ? dragRatio! * duration : currentTime;
+
+  const ratioFromClientX = (clientX: number) => {
+    const rect = barRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return 0;
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  };
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (duration <= 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragRatio(ratioFromClientX(e.clientX));
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setDragRatio(ratioFromClientX(e.clientX));
+  };
+
+  const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    const finalRatio = ratioFromClientX(e.clientX);
+    setDragRatio(null);
+    socket.emit(C2S.PLAYER_SEEK, { time: Math.floor(finalRatio * duration) });
+  };
+
+  return (
+    <div className="w-full">
+      <div
+        ref={barRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="relative h-6 flex items-center cursor-pointer touch-none"
+      >
+        <div className="absolute left-0 right-0 h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-karaoke-primary"
+            style={{ width: `${ratio * 100}%`, transition: isDragging ? 'none' : 'width 1s linear' }}
+          />
+        </div>
+        <div
+          className="absolute w-4 h-4 bg-karaoke-primary rounded-full -translate-x-1/2 shadow"
+          style={{ left: `${ratio * 100}%`, transition: isDragging ? 'none' : 'left 1s linear' }}
+        />
+      </div>
+      <div className="flex justify-between text-sm text-gray-500 font-mono">
+        <span>{formatDuration(Math.floor(displayTime))}</span>
+        <span>{formatDuration(Math.floor(duration))}</span>
+      </div>
+    </div>
+  );
+};
 
 export const ControlTab = () => {
   const playerState = useRoomStore(s => s.playerState);
@@ -31,8 +93,6 @@ export const ControlTab = () => {
     return <div className="h-full flex items-center justify-center text-gray-500">Chưa có bài hát nào</div>;
   }
 
-  const progress = playerState.duration > 0 ? (playerState.currentTime / playerState.duration) * 100 : 0;
-
   return (
     <div className="flex flex-col h-full bg-karaoke-dark p-6 pb-24">
        <div className="flex-1 flex flex-col items-center justify-center max-w-sm mx-auto w-full gap-8">
@@ -43,15 +103,7 @@ export const ControlTab = () => {
            <p className="text-gray-400 mt-1">{currentSong.channelTitle}</p>
          </div>
 
-         <div className="w-full">
-           <div className="h-2 bg-gray-700 rounded-full mb-2 overflow-hidden">
-             <div className="h-full bg-karaoke-primary transition-all duration-1000 linear" style={{ width: `${progress}%` }} />
-           </div>
-           <div className="flex justify-between text-sm text-gray-500 font-mono">
-             <span>{formatDuration(Math.floor(playerState.currentTime))}</span>
-             <span>{formatDuration(Math.floor(playerState.duration))}</span>
-           </div>
-         </div>
+         <SeekBar currentTime={playerState.currentTime} duration={playerState.duration} />
 
          <div className="flex items-center justify-center gap-8 w-full">
             <button onClick={togglePlay} className="w-20 h-20 bg-karaoke-primary text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
