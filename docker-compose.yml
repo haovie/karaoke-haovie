@@ -3,22 +3,37 @@ services:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
-    ports:
-      - "${PORT:-3001}:3001"
+    expose:
+      - "3001"
     environment:
       - PORT=3001
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       - SEARCH_CACHE_TTL=${SEARCH_CACHE_TTL:-21600000}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
     ports:
       - "80:80"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped

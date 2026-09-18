@@ -9,6 +9,8 @@ COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
 FROM base AS build
+ARG VITE_PUBLIC_BASE_URL
+ENV VITE_PUBLIC_BASE_URL=$VITE_PUBLIC_BASE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
