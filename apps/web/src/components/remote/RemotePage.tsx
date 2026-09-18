@@ -27,9 +27,15 @@ export default function RemotePage() {
       <ConnectionStatus />
       
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
-         {activeTab === 'search' && <SearchTab />}
-         {activeTab === 'queue' && <QueueTab />}
-         {activeTab === 'control' && <ControlTab />}
+        <div hidden={activeTab !== 'search'}>
+          <SearchTab />
+        </div>
+        <div hidden={activeTab !== 'queue'}>
+          <QueueTab />
+        </div>
+        <div hidden={activeTab !== 'control'}>
+          <ControlTab />
+        </div>
       </div>
 
       {currentSong && activeTab !== 'control' && (
