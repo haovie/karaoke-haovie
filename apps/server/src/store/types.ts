@@ -15,4 +15,5 @@ export interface RoomStore {
   touchRoom(code: string): void;
   getStaleRooms(maxIdleMs: number): string[];
   setOverlayVisible(code: string, visible: boolean): RoomState;
+  setQueuePanelBlurred(code: string, blurred: boolean): RoomState;
 }

@@ -13,6 +13,7 @@ export const C2S = {
   PLAYER_VOLUME: 'player:volume',
   PLAYER_STATE_REPORT: 'player:state:report',
   OVERLAY_SET: 'overlay:set',
+  QUEUE_PANEL_BLUR_SET: 'queue-panel:blur:set',
 } as const;
 
 // ── Server → Client Events ──────────────────────────────────────────────────
@@ -29,6 +30,7 @@ export const S2C = {
   USER_LEFT: 'user:left',
   ERROR: 'error',
   OVERLAY_STATE: 'overlay:state',
+  QUEUE_PANEL_BLUR_STATE: 'queue-panel:blur:state',
 } as const;
 
 export type C2SEvent = (typeof C2S)[keyof typeof C2S];

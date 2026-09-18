@@ -13,6 +13,7 @@ interface RoomStoreState {
   connectionState: 'connecting' | 'connected' | 'disconnected';
   isHost: boolean;
   overlayVisible: boolean;
+  queuePanelBlurred: boolean;
   setRoomState: (state: RoomState) => void;
   updateQueue: (queue: QueueItem[], currentIndex: number, version: number) => void;
   updatePlayerState: (state: PlayerState) => void;
@@ -20,6 +21,7 @@ interface RoomStoreState {
   setConnectionState: (state: 'connecting' | 'connected' | 'disconnected') => void;
   setIsHost: (isHost: boolean) => void;
   setOverlayVisible: (visible: boolean) => void;
+  setQueuePanelBlurred: (blurred: boolean) => void;
   reset: () => void;
   currentSong: () => QueueItem | null;
   nextSong: () => QueueItem | null;
@@ -47,6 +49,7 @@ export const useRoomStore = create<RoomStoreState>((set, get) => ({
   connectionState: 'disconnected',
   isHost: false,
   overlayVisible: false,
+  queuePanelBlurred: false,
 
   setRoomState: (state) => set({ ...state }),
   updateQueue: (queue, currentIndex, version) => set({ queue, currentIndex, version }),
@@ -56,8 +59,9 @@ export const useRoomStore = create<RoomStoreState>((set, get) => ({
   setIsHost: (isHost) => set({ isHost }),
 
   setOverlayVisible: (overlayVisible) => set({ overlayVisible }),
+  setQueuePanelBlurred: (queuePanelBlurred) => set({ queuePanelBlurred }),
 
-  reset: () => set({ roomCode: '', queue: [], currentIndex: -1, version: 0, users: [], playerState: defaultPlayerState, isHost: false, overlayVisible: false }),
+  reset: () => set({ roomCode: '', queue: [], currentIndex: -1, version: 0, users: [], playerState: defaultPlayerState, isHost: false, overlayVisible: false, queuePanelBlurred: false }),
   
   currentSong: () => {
     const { queue, currentIndex } = get();

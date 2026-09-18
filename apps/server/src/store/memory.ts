@@ -37,7 +37,8 @@ export class InMemoryRoomStore implements RoomStore {
       createdAt: now,
       lastActivityAt: now,
       blockedVideoIds: [],
-      overlayVisible: false
+      overlayVisible: false,
+      queuePanelBlurred: false
     };
 
     this.rooms.set(code, state);
@@ -193,6 +194,15 @@ export class InMemoryRoomStore implements RoomStore {
     if (!room) throw new Error('ROOM_NOT_FOUND');
 
     room.overlayVisible = visible;
+    this.touchRoom(code);
+    return room;
+  }
+
+  setQueuePanelBlurred(code: string, blurred: boolean): RoomState {
+    const room = this.getRoom(code);
+    if (!room) throw new Error('ROOM_NOT_FOUND');
+
+    room.queuePanelBlurred = blurred;
     this.touchRoom(code);
     return room;
   }

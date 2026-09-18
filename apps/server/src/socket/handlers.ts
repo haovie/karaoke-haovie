@@ -13,6 +13,7 @@ import {
   playerVolumeSchema,
   playerStateSchema,
   overlaySetSchema,
+  queuePanelBlurSetSchema,
   RoomJoinPayload,
   QueueAddPayload,
   QueueRemovePayload,
@@ -22,6 +23,7 @@ import {
   PlayerVolumePayload,
   PlayerStatePayload,
   OverlaySetPayload,
+  QueuePanelBlurSetPayload,
   QueueItem
 } from '@karaoke/shared';
 
@@ -216,6 +218,17 @@ export function setupSocketHandlers(io: Server, store: RoomStore) {
         const parsed = overlaySetSchema.parse(data);
         store.setOverlayVisible(socketData.roomCode, parsed.visible);
         io.to(socketData.roomCode).emit(S2C.OVERLAY_STATE, parsed);
+      } catch (err: any) {
+        socket.emit(S2C.ERROR, { error: err.message });
+      }
+    });
+
+    socket.on(C2S.QUEUE_PANEL_BLUR_SET, (data: QueuePanelBlurSetPayload) => {
+      try {
+        if (!socketData.roomCode) throw new Error('Not in a room');
+        const parsed = queuePanelBlurSetSchema.parse(data);
+        store.setQueuePanelBlurred(socketData.roomCode, parsed.blurred);
+        io.to(socketData.roomCode).emit(S2C.QUEUE_PANEL_BLUR_STATE, parsed);
       } catch (err: any) {
         socket.emit(S2C.ERROR, { error: err.message });
       }

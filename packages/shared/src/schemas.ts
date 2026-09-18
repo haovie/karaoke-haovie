@@ -41,6 +41,10 @@ export const overlaySetSchema = z.object({
   visible: z.boolean(),
 });
 
+export const queuePanelBlurSetSchema = z.object({
+  blurred: z.boolean(),
+});
+
 export const playerStateSchema = z.object({
   videoId: z.string().nullable(),
   currentTime: z.number().min(0),

@@ -41,6 +41,7 @@ export type RoomState = {
   lastActivityAt: number;
   blockedVideoIds: string[];
   overlayVisible: boolean; // hiển thị thông tin bài hát trên màn hình TV
+  queuePanelBlurred: boolean; // làm mờ bảng bài hát tiếp theo trên màn hình TV
 };
 
 // ── Search Result ───────────────────────────────────────────────────────────
@@ -105,6 +106,10 @@ export type PlayerVolumePayload = {
 
 export type OverlaySetPayload = {
   visible: boolean;
+};
+
+export type QueuePanelBlurSetPayload = {
+  blurred: boolean;
 };
 
 export type RoomJoinPayload = {

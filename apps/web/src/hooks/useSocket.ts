@@ -55,6 +55,10 @@ export const useSocket = () => {
         useRoomStore.getState().setOverlayVisible(visible);
       });
 
+      socket.on(S2C.QUEUE_PANEL_BLUR_STATE, ({ blurred }) => {
+        useRoomStore.getState().setQueuePanelBlurred(blurred);
+      });
+
       socket.on(S2C.USER_JOINED, (user) => {
         const state = useRoomStore.getState();
         const exists = state.users.some(u => u.socketId === user.socketId);

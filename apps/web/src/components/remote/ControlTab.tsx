@@ -70,6 +70,7 @@ export const ControlTab = () => {
   const playerState = useRoomStore(s => s.playerState);
   const currentSong = useRoomStore(s => s.currentSong());
   const overlayVisible = useRoomStore(s => s.overlayVisible);
+  const queuePanelBlurred = useRoomStore(s => s.queuePanelBlurred);
   const toast = useToast();
   
   const [vol, setVol] = useState(playerState.volume);
@@ -82,6 +83,7 @@ export const ControlTab = () => {
   const handleNext = () => socket.emit(C2S.PLAYER_NEXT);
 
   const toggleOverlay = () => socket.emit(C2S.OVERLAY_SET, { visible: !overlayVisible });
+  const toggleQueuePanelBlur = () => socket.emit(C2S.QUEUE_PANEL_BLUR_SET, { blurred: !queuePanelBlurred });
   
   const handleVol = (e: any) => {
     const v = parseInt(e.target.value);
@@ -122,6 +124,14 @@ export const ControlTab = () => {
            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
            <input type="range" min="0" max="100" value={vol} onChange={handleVol} className="flex-1 accent-karaoke-primary h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
          </div>
+
+         <button
+           onClick={toggleQueuePanelBlur}
+           className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl font-medium transition-colors ${queuePanelBlurred ? 'bg-karaoke-primary text-white' : 'bg-gray-800 text-gray-300'}`}
+         >
+           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18M10.584 10.587a2 2 0 002.828 2.828M9.881 4.255A10.94 10.94 0 0112 4c5.523 0 10 3.582 10 8 0 1.61-.596 3.11-1.616 4.352M6.228 6.228C3.659 7.684 2 9.711 2 12c0 4.418 4.477 8 10 8 1.693 0 3.287-.337 4.684-.933" /></svg>
+           {queuePanelBlurred ? 'Hiện rõ danh sách tiếp theo' : 'Làm mờ danh sách tiếp theo'}
+         </button>
 
          <button
            onClick={toggleOverlay}
