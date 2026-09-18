@@ -13,6 +13,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
 COPY . .
+RUN pnpm --filter @karaoke/shared build
 RUN pnpm --filter @karaoke/server build
 RUN pnpm --filter @karaoke/server deploy --prod /prod/server
 
