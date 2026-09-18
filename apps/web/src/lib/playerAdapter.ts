@@ -11,6 +11,69 @@ export interface PlayerAdapter {
   on(event: 'stateChange' | 'error' | 'ready', callback: (data?: any) => void): void;
 }
 
+const YT_IFRAME_API_SRC = 'https://www.youtube.com/iframe_api';
+let ytApiPromise: Promise<void> | null = null;
+
+function loadYouTubeApi(): Promise<void> {
+  if (typeof window !== 'undefined' && window.YT?.Player) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+
+  ytApiPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${YT_IFRAME_API_SRC}"]`);
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    let settled = false;
+    let timeoutId: number | null = null;
+
+    const cleanup = () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (!window.YT?.Player) {
+        ytApiPromise = null;
+        reject(new Error('YouTube IFrame API loaded but window.YT.Player is missing'));
+        return;
+      }
+      resolve();
+    };
+
+    const fail = (err: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      ytApiPromise = null;
+      reject(err instanceof Error ? err : new Error(String(err)));
+    };
+
+    window.onYouTubeIframeAPIReady = () => {
+      try { previousCallback?.(); } catch {}
+      succeed();
+    };
+
+    timeoutId = window.setTimeout(() => {
+      fail(new Error('Timed out loading YouTube IFrame API'));
+    }, 15000);
+
+    if (existing) {
+      existing.addEventListener('error', () => fail(new Error('Failed to load YouTube IFrame API script')), { once: true });
+      return;
+    }
+
+    const tag = document.createElement('script');
+    tag.src = YT_IFRAME_API_SRC;
+    tag.async = true;
+    tag.addEventListener('error', () => fail(new Error('Failed to load YouTube IFrame API script')), { once: true });
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    if (firstScriptTag?.parentNode) firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    else (document.head ?? document.documentElement).appendChild(tag);
+  });
+
+  return ytApiPromise;
+}
+
 export class YouTubePlayerAdapter implements PlayerAdapter {
   private player: YT.Player | null = null;
   private isReady = false;
@@ -19,29 +82,38 @@ export class YouTubePlayerAdapter implements PlayerAdapter {
   private reportInterval: number | null = null;
   private currentVideoId: string | null = null;
   private hasInteracted = false;
-  
+  private destroyed = false;
+  private initPromise: Promise<void> | null = null;
+
   constructor(targetId: string) {
     this.targetId = targetId;
-    this.init();
+    this.initPromise = this.init();
   }
 
-  private init() {
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-      window.onYouTubeIframeAPIReady = () => {
-        this.createPlayer();
-      };
-    } else {
+  private async init() {
+    try {
+      await loadYouTubeApi();
+      if (this.destroyed) return;
       this.createPlayer();
+    } catch (err) {
+      if (this.destroyed) return;
+      this.emit('error', err instanceof Error ? err.message : String(err));
     }
   }
 
   private createPlayer() {
-    this.player = new window.YT.Player(this.targetId, {
+    if (this.destroyed || this.player) return;
+    if (!window.YT?.Player) {
+      this.emit('error', 'YouTube player API is not available');
+      return;
+    }
+    const target = document.getElementById(this.targetId);
+    if (!target) {
+      this.emit('error', `YouTube player target #${this.targetId} not found`);
+      return;
+    }
+    try {
+      this.player = new window.YT.Player(this.targetId, {
       playerVars: {
         autoplay: 1,
         controls: 0,
@@ -57,12 +129,16 @@ export class YouTubePlayerAdapter implements PlayerAdapter {
         onStateChange: this.handleStateChange.bind(this),
         onError: this.handleError.bind(this)
       }
-    });
+      });
+    } catch (err) {
+      this.emit('error', err instanceof Error ? err.message : String(err));
+    }
   }
 
   private handleReady() {
     this.isReady = true;
     this.player?.mute(); // Mute initially due to browser autoplay policies
+    if (this.currentVideoId) this.player?.loadVideoById(this.currentVideoId);
     this.emit('ready');
     
     this.reportInterval = window.setInterval(() => {
@@ -143,8 +219,18 @@ export class YouTubePlayerAdapter implements PlayerAdapter {
   }
 
   public destroy() {
-    if (this.reportInterval) window.clearInterval(this.reportInterval);
-    if (this.player) this.player.destroy();
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.isReady = false;
+    if (this.reportInterval !== null) {
+      window.clearInterval(this.reportInterval);
+      this.reportInterval = null;
+    }
+    if (this.player) {
+      try { this.player.destroy(); } catch {}
+      this.player = null;
+    }
+    this.callbacks = { stateChange: [], error: [], ready: [] };
   }
 
   public on(event: 'stateChange' | 'error' | 'ready', callback: (data?: any) => void) {
