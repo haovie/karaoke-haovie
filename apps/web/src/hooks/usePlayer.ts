@@ -58,14 +58,6 @@ export const usePlayer = (containerId: string) => {
   useEffect(() => {
     const handlePlay = () => adapterRef.current?.play();
     const handlePause = () => adapterRef.current?.pause();
-    const handleNext = () => {
-      // Advance queue and load next song
-      const store = useRoomStore.getState();
-      const nextIdx = store.currentIndex + 1;
-      if (nextIdx < store.queue.length) {
-        adapterRef.current?.load(store.queue[nextIdx].videoId);
-      }
-    };
     const handleSeek = (data: {time: number}) => adapterRef.current?.seek(data.time);
     const handleVolume = (data: {volume: number}) => adapterRef.current?.setVolume(data.volume);
 
@@ -73,14 +65,12 @@ export const usePlayer = (containerId: string) => {
     socket.on(S2C.PLAYER_PAUSE, handlePause);
     socket.on(S2C.PLAYER_SEEK, handleSeek);
     socket.on(S2C.PLAYER_VOLUME, handleVolume);
-    socket.on(S2C.PLAYER_NEXT, handleNext);
 
     return () => {
       socket.off(S2C.PLAYER_PLAY, handlePlay);
       socket.off(S2C.PLAYER_PAUSE, handlePause);
       socket.off(S2C.PLAYER_SEEK, handleSeek);
       socket.off(S2C.PLAYER_VOLUME, handleVolume);
-      socket.off(S2C.PLAYER_NEXT, handleNext);
     };
   }, []);
 
