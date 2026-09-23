@@ -100,6 +100,44 @@ export const ControlTab = () => {
     return <div className="h-full flex items-center justify-center text-gray-500">Chưa có bài hát nào</div>;
   }
 
+  const [prevVol, setPrevVol] = useState(65);
+
+
+  const toggleMute = () => {
+    if (vol > 0) {
+      setPrevVol(vol);
+      setVol(0);
+      socket.emit(C2S.PLAYER_VOLUME, { volume: 0 });
+    } else {
+      setVol(prevVol || 50);
+      socket.emit(C2S.PLAYER_VOLUME, { volume: prevVol || 50 });
+    }
+  };
+
+  // Render icon linh hoạt theo mức âm lượng
+  const renderVolumeIcon = () => {
+    if (vol === 0) {
+      return (
+        <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+        </svg>
+      );
+    }
+    if (vol < 50) {
+      return (
+        <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+      );
+    }
+    return (
+      <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+      </svg>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full bg-karaoke-dark p-6 pb-24">
        <div className="flex-1 flex flex-col items-center justify-center max-w-sm mx-auto w-full gap-8">
@@ -131,10 +169,70 @@ export const ControlTab = () => {
             </button>
          </div>
 
-         <div className="w-full flex items-center gap-4 bg-gray-800 p-4 rounded-xl mt-4">
-           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-           <input type="range" min="0" max="100" value={vol} onChange={handleVol} className="flex-1 accent-karaoke-primary h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
-         </div>
+        <div className="w-full max-w-2xl mx-auto p-[1px] rounded-2xl bg-gradient-to-r from-pink-500/30 via-purple-500/20 to-blue-500/30 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-5 bg-gray-900/90 p-5 rounded-2xl border border-white/10 shadow-inner">
+
+            {/* Nút Mute / Unmute nhanh */}
+            <button
+              onClick={toggleMute}
+              className="group relative p-2.5 rounded-xl bg-gray-800/80 border border-gray-700/60 text-gray-300 hover:text-pink-400 hover:border-pink-500/50 hover:bg-gray-800 transition-all duration-300 shadow-md focus:outline-none"
+            >
+              {renderVolumeIcon()}
+            </button>
+
+            {/* Thanh trượt bọc giao diện tùy chỉnh */}
+            <div className="relative flex-1 flex items-center group py-4">
+
+              {/* Track nền mờ bên dưới */}
+              <div className="absolute inset-x-0 h-2 bg-gray-800/90 rounded-full overflow-hidden border border-white/5">
+                {/* Vạch âm lượng đã kéo qua với gradient neon */}
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 rounded-full transition-all duration-75 relative"
+                  style={{ width: `${vol}%` }}
+                >
+                  {/* Ánh sáng quét bóng ở mép dải màu */}
+                  <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/40 blur-[1px]" />
+                </div>
+              </div>
+
+              {/* Hiệu ứng hào quang neon (Glow Effect) */}
+              <div
+                className="absolute h-2 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full blur-sm opacity-50 pointer-events-none transition-all duration-75"
+                style={{ width: `${vol}%` }}
+              />
+
+              {/* Con trỏ giả (Custom Thumb) chạy đồng bộ với input */}
+              <div
+                className="absolute w-4 h-4 bg-white border-2 border-pink-500 rounded-full shadow-[0_0_12px_rgba(236,72,153,0.8)] pointer-events-none -translate-x-1/2 transition-transform duration-100 group-hover:scale-125"
+                style={{ left: `${vol}%` }}
+              >
+                {/* Tooltip nổi hiển thị số % khi rê chuột */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-gray-800 border border-pink-500/40 text-[11px] font-semibold text-pink-300 shadow-xl pointer-events-none">
+                  {vol}%
+                </div>
+              </div>
+
+              {/* Input Range ẩn nền, nhận tương tác kéo thả */}
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={vol}
+                onChange={handleVol}
+                className="relative z-10 w-full h-4 opacity-0 cursor-pointer"
+              />
+            </div>
+
+            {/* Số hiển thị chi tiết bên phải */}
+            <div className="flex items-baseline justify-end w-12 font-mono text-sm tracking-tight select-none">
+              <span className="font-bold text-white transition-colors duration-150 group-hover:text-pink-400">
+                {vol}
+              </span>
+              <span className="text-xs text-gray-500 ml-0.5">%</span>
+            </div>
+
+          </div>
+        </div>
 
          <button
            onClick={toggleQueuePanelBlur}
