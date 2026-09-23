@@ -80,6 +80,11 @@ export const ControlTab = () => {
     else socket.emit(C2S.PLAYER_PLAY);
   };
 
+  const handleSeekRelative = (seconds: number) => {
+    const newTime = Math.max(0, Math.min(playerState.duration, playerState.currentTime + seconds));
+    socket.emit(C2S.PLAYER_SEEK, { time: newTime });
+  };
+
   const handleNext = () => socket.emit(C2S.PLAYER_NEXT);
 
   const toggleOverlay = () => socket.emit(C2S.OVERLAY_SET, { visible: !overlayVisible });
@@ -107,13 +112,19 @@ export const ControlTab = () => {
 
          <SeekBar currentTime={playerState.currentTime} duration={playerState.duration} />
 
-         <div className="flex items-center justify-center gap-8 w-full">
+         <div className="flex items-center justify-center gap-4 sm:gap-6 w-full">
+            <button onClick={() => handleSeekRelative(-10)} className="w-14 h-14 bg-gray-800 text-white rounded-full flex items-center justify-center active:scale-95 transition-transform font-medium">
+              -10s
+            </button>
             <button onClick={togglePlay} className="w-20 h-20 bg-karaoke-primary text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
               {playerState.state === 'playing' ? (
                 <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
               ) : (
                 <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
               )}
+            </button>
+            <button onClick={() => handleSeekRelative(10)} className="w-14 h-14 bg-gray-800 text-white rounded-full flex items-center justify-center active:scale-95 transition-transform font-medium">
+              +10s
             </button>
             <button onClick={handleNext} className="w-14 h-14 bg-gray-800 text-white rounded-full flex items-center justify-center active:scale-95 transition-transform">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
