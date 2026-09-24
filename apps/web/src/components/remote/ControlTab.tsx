@@ -74,6 +74,7 @@ export const ControlTab = () => {
   const toast = useToast();
   
   const [vol, setVol] = useState(playerState.volume);
+  const [prevVol, setPrevVol] = useState(65);
 
   const togglePlay = () => {
     if (playerState.state === 'playing') socket.emit(C2S.PLAYER_PAUSE);
@@ -99,9 +100,6 @@ export const ControlTab = () => {
   if (!currentSong) {
     return <div className="h-full flex items-center justify-center text-gray-500">Chưa có bài hát nào</div>;
   }
-
-  const [prevVol, setPrevVol] = useState(65);
-
 
   const toggleMute = () => {
     if (vol > 0) {
